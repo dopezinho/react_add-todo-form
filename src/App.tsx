@@ -28,8 +28,6 @@ export const App = () => {
     const userExists = usersFromServer.some(user => user.id === selectedUserId);
 
     if (!userExists) {
-
-
       return;
     }
 
