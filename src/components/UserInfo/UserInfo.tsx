@@ -1,17 +1,16 @@
-type User = {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-};
+import { User } from '../../App';
 
 interface UserInfoProps {
-  user: User;
+  user: User | null;
 }
 
 export const UserInfo = ({ user }: UserInfoProps) => {
+  if (!user) {
+    return null;
+  }
+
   return (
-    <a className="UserInfo" href={`mailto:${user.email}`} data-cy="userInfo">
+    <a className="UserInfo" href={`mailto:${user.email}`}>
       {user.name}
     </a>
   );
