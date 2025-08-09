@@ -1,115 +1,124 @@
-import './App.scss';
+import { useState, useEffect } from 'react';
 import { TodoList } from './components/TodoList';
-import { useState } from 'react';
-
-import todosFromServer from './api/todos';
 import usersFromServer from './api/users';
+import todosFromServer from './api/todos';
+import './App.scss';
+
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+};
+
+type Todo = {
+  id: number;
+  title: string;
+  completed: boolean;
+  userId: number;
+  user: User;
+};
 
 export const App = () => {
-  const [todos, setTodo] = useState(todosFromServer);
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [title, setTitle] = useState('');
+  const [userId, setUserId] = useState('');
+  const [errors, setErrors] = useState({
+    title: false,
+    user: false,
+  });
 
-  const [titlee, setTitle] = useState('');
-  const [hasTitleError, setHasTitleError] = useState(false);
+  useEffect(() => {
+    const formattedTodos = todosFromServer.map(todo => ({
+      ...todo,
+      user: usersFromServer.find(user => user.id === todo.userId)!,
+    }));
 
-  const [selecteedUserId, setSelectedUserId] = useState(0);
-  const [hasSelectedError, setHasSelectedError] = useState(false);
+    setTodos(formattedTodos);
+    setUsers(usersFromServer);
+  }, []);
 
-  const reset = () => {
-    setTitle('');
-    setSelectedUserId(0);
-  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-  type AddPostsParams = {
-    title: string;
-    selectedUserId: number;
-  };
+    const titleError = !title.trim();
+    const userError = !userId;
 
-  const addPosts = ({ title, selectedUserId }: AddPostsParams) => {
-    const userExists = usersFromServer.some(user => user.id === selectedUserId);
+    setErrors({
+      title: titleError,
+      user: userError,
+    });
 
-    if (!userExists) {
+    if (titleError || userError) {
       return;
     }
 
-    const arr = [...todos];
-    const maxId = arr.length > 0 ? Math.max(...arr.map(todo => todo.id)) : 0;
+    const selectedUser = users.find(user => user.id === Number(userId))!;
 
-    const prepared = {
-      id: maxId + 1,
-      title,
-      userId: selectedUserId,
+    const newTodo: Todo = {
+      id: Math.max(...todos.map(todo => todo.id), 0) + 1,
+      title: title.trim(),
       completed: false,
+      userId: Number(userId),
+      user: selectedUser,
     };
 
-    const newTodos = [...arr, prepared];
-
-    reset();
-    setTodo(newTodos);
-  };
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-
-    setHasTitleError(!titlee);
-    setHasSelectedError(!selecteedUserId);
-
-    if (!titlee || !selecteedUserId) {
-      return;
-    }
-
-    addPosts({ title: titlee, selectedUserId: selecteedUserId });
+    setTodos([...todos, newTodo]);
+    setTitle('');
+    setUserId('');
   };
 
   return (
     <div className="App">
       <h1>Add todo form</h1>
 
-      <form action="#" method="POST" onSubmit={handleSubmit} onReset={reset}>
+      <form onSubmit={handleSubmit} data-cy="form">
         <div className="field">
-          <label htmlFor="titleInput">
-            Title:
-            <input
-              type="text"
-              data-cy="titleInput"
-              id="titleInput"
-              placeholder="Enter a title"
-              onChange={event => {
-                setTitle(event.target.value);
-                setHasTitleError(false);
-              }}
-              value={titlee}
-            />
-            {hasTitleError && (
-              <span className="error">Please enter a title</span>
-            )}
-          </label>
+          <label htmlFor="title">Title:</label>
+          <input
+            id="title"
+            type="text"
+            data-cy="titleInput"
+            value={title}
+            onChange={e => {
+              setTitle(e.target.value);
+              setErrors(prev => ({ ...prev, title: false }));
+            }}
+            placeholder="Enter todo title"
+          />
+          {errors.title && (
+            <span className="error" data-cy="titleError">
+              Please enter a title
+            </span>
+          )}
         </div>
 
         <div className="field">
-          <label>
-            User:
-            <select
-              data-cy="userSelect"
-              value={selecteedUserId}
-              onChange={e => {
-                setSelectedUserId(Number(e.target.value));
-                setHasSelectedError(false);
-              }}
-            >
-              <option value="0">Choose a user</option>
-
-              {usersFromServer.map(e => {
-                return (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
-                );
-              })}
-            </select>
-            {hasSelectedError && (
-              <span className="error">Please choose a user</span>
-            )}
-          </label>
+          <label htmlFor="user">User:</label>
+          <select
+            id="user"
+            data-cy="userSelect"
+            value={userId}
+            onChange={e => {
+              setUserId(e.target.value);
+              setErrors(prev => ({ ...prev, user: false }));
+            }}
+          >
+            <option value="" data-cy="defaultOption">
+              Choose a user
+            </option>
+            {users.map(user => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+          {errors.user && (
+            <span className="error" data-cy="userError">
+              Please choose a user
+            </span>
+          )}
         </div>
 
         <button type="submit" data-cy="submitButton">

@@ -1,26 +1,35 @@
-import { Todo } from '../../types';
-import classNames from 'classnames';
 import { UserInfo } from '../UserInfo';
-import usersFromServer from './../../api/users';
 
-type Props = {
-  todo: Todo;
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 };
 
-export const TodoInfo: React.FC<Props> = ({ todo }) => {
-  const user = usersFromServer.find(e => e.id === todo.userId)!;
+type Todo = {
+  id: number;
+  title: string;
+  completed: boolean;
+  userId: number;
+  user: User;
+};
 
+interface TodoInfoProps {
+  todo: Todo;
+}
+
+export const TodoInfo = ({ todo }: TodoInfoProps) => {
   return (
     <article
-      key={todo.id}
+      className={`TodoInfo ${todo.completed ? 'TodoInfo--completed' : ''}`}
       data-id={todo.id}
-      className={classNames('TodoInfo', {
-        'TodoInfo--completed': todo.completed,
-      })}
+      data-cy="todoItem"
     >
-      <h2 className="TodoInfo__title">{todo.title}</h2>
-
-      <UserInfo user={user} />
+      <h2 className="TodoInfo__title" data-cy="todoTitle">
+        {todo.title}
+      </h2>
+      <UserInfo user={todo.user} />
     </article>
   );
 };
